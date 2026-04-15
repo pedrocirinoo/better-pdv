@@ -137,4 +137,4 @@ node scripts/capture.mjs
 
 ## Licença
 
-MIT — use à vontade.
+MIT 

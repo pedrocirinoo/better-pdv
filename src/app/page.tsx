@@ -222,6 +222,18 @@ export default function PDV() {
     chimeSuccess();
   }, [items, currentOperator, discount]);
 
+  // Pre-scan items when tutorial opens so footer is stable before first step measures
+  const handleOpenTutorial = useCallback(() => {
+    if (items.length === 0) {
+      simulateScan();
+      setTimeout(simulateScan, 250);
+      setTimeout(simulateScan, 500);
+      setTimeout(() => setTutorialOpen(true), 700);
+    } else {
+      setTutorialOpen(true);
+    }
+  }, [items.length, simulateScan]);
+
   const toggleDark = useCallback(() => {
     setDark(prev => {
       const next = !prev;
@@ -323,7 +335,7 @@ export default function PDV() {
         description: "Simula a leitura de um código de barras. No uso real, o leitor físico adicionaria o produto automaticamente.",
         shortcuts: ["F3"],
         position: "top",
-        onEnter: () => { simulateScan(); setTimeout(simulateScan, 300); setTimeout(simulateScan, 600); },
+        // items already pre-scanned when tutorial opens
       },
       {
         selector: "[data-tour='search']",
@@ -372,7 +384,7 @@ export default function PDV() {
       {
         selector: "[data-tour='historico']",
         title: "Histórico de Vendas",
-        description: "Todas as vendas do operador, filtráveis por dia, mês ou ano. Para estornar uma venda, informe o valor (parcial ou total) e autentique com a senha do supervisor (1111).",
+        description: "Todas as vendas do operador, filtráveis por dia, mês ou ano. Para estornar uma venda, informe o valor (parcial ou total) e autentique com a senha do supervisor.",
         shortcuts: ["Esc fecha"],
         position: "bottom",
         onEnter: () => setTimeout(() => { setPanelOperator(currentOperator); setPanelOpen(true); }, 150),
@@ -427,7 +439,7 @@ export default function PDV() {
   return (
     <>
       <div className="page-enter page-enter-1">
-        <Header operator={currentOperator} onOperatorClick={() => setOperatorOpen(true)} dark={dark} onToggleDark={toggleDark} onHistorico={() => { setPanelOperator(currentOperator); setPanelOpen(true); }} onFechamento={() => setFechamentoOpen(true)} onProdutos={() => setProdutosOpen(true)} onCallSupervisor={() => showToast("Supervisor chamado — aguarde")} onTutorial={() => setTutorialOpen(true)} />
+        <Header operator={currentOperator} onOperatorClick={() => setOperatorOpen(true)} dark={dark} onToggleDark={toggleDark} onHistorico={() => { setPanelOperator(currentOperator); setPanelOpen(true); }} onFechamento={() => setFechamentoOpen(true)} onProdutos={() => setProdutosOpen(true)} onCallSupervisor={() => showToast("Supervisor chamado — aguarde")} onTutorial={handleOpenTutorial} />
       </div>
 
       <main className="flex flex-1 overflow-hidden">

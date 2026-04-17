@@ -27,11 +27,10 @@ export function Tutorial({ open, steps, onClose }: TutorialProps) {
   const [tooltipH, setTooltipH] = useState(180);
   const prevIndexRef = useRef<number>(-1);
 
-  // Build visible step list once when opening
+  // Build step list once when opening (no DOM filtering — onEnter creates elements before measure)
   useEffect(() => {
     if (open) {
-      const visible = steps.filter(s => document.querySelector(s.selector));
-      setStepList(visible);
+      setStepList(steps);
       setCurrent(0);
       setRect(null);
       prevIndexRef.current = -1;

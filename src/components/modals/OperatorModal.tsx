@@ -27,7 +27,7 @@ export function OperatorModal({ open, operators, currentOperator, onSelect, onCl
 
   return (
     <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm modal-overlay ${open ? "open" : ""}`} onClick={onClose}>
-      <div role="dialog" aria-modal="true" aria-label="Selecionar operador" onClick={(e) => e.stopPropagation()} className="modal-panel bg-surface-lowest rounded-xl shadow-ambient-lg w-full max-w-sm p-6">
+      <div data-tour="operator-modal" role="dialog" aria-modal="true" aria-label="Selecionar operador" onClick={(e) => e.stopPropagation()} className="modal-panel bg-surface-lowest rounded-xl shadow-ambient-lg w-full max-w-sm p-6">
         <h2 className="font-display font-bold text-lg mb-4">Operadores</h2>
 
         <div className="space-y-2">

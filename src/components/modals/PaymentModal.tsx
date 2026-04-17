@@ -128,6 +128,7 @@ export function PaymentModal({ open, total, onConfirm, onClose }: PaymentModalPr
     <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm modal-overlay ${open ? "open" : ""}`} onClick={onClose}>
       <div
         ref={ref}
+        data-tour="payment-modal"
         role="dialog"
         aria-modal="true"
         aria-label="Pagamento"

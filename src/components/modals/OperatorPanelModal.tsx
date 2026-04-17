@@ -96,6 +96,7 @@ export function OperatorPanelModal({ open, operator, onClose, onRefund }: Operat
       <div className="absolute inset-0 bg-black/20" />
 
       <div
+        data-tour="panel-modal"
         role="dialog"
         aria-modal="true"
         aria-label="Histórico de vendas"

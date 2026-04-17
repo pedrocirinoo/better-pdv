@@ -66,8 +66,8 @@ export function Tutorial({ open, steps, onClose }: TutorialProps) {
       if (el) setRect(el.getBoundingClientRect());
     };
 
-    // Delay so DOM updates from onEnter (and React re-renders) settle before measuring
-    const t = setTimeout(measure, 250);
+    // Delay so DOM updates from onEnter (and CSS transitions) settle before measuring
+    const t = setTimeout(measure, 350);
 
     const onResize = () => {
       cancelAnimationFrame(rafRef.current);

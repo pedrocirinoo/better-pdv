@@ -54,6 +54,7 @@ export function DiscountModal({ open, subtotal, onApply, onClose }: DiscountModa
       onClick={onClose}
     >
       <div
+        data-tour="discount-modal"
         onClick={(e) => e.stopPropagation()}
         className="modal-panel bg-surface-lowest rounded-xl shadow-ambient-lg w-full max-w-sm p-6"
       >

@@ -90,6 +90,7 @@ export function ProdutosModal({ open, products, onSave, onClose }: ProdutosModal
       <div className="absolute inset-0 bg-black/20" />
 
       <div
+        data-tour="produtos-modal"
         onClick={(e) => e.stopPropagation()}
         className="modal-panel relative w-full max-w-lg bg-surface-lowest rounded-xl shadow-ambient-lg flex flex-col max-h-[85vh]"
       >

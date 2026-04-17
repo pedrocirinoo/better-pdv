@@ -80,6 +80,7 @@ export function FechamentoDrawer({ open, operator, onClose }: FechamentoDrawerPr
       <div className="absolute inset-0 bg-black/20" />
 
       <div
+        data-tour="fechamento-modal"
         role="dialog"
         aria-modal="true"
         aria-label="Fechamento de caixa"

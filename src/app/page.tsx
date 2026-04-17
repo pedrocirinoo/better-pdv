@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { CartItem, Operator, Product, Purchase } from "@/lib/types";
 import { PRODUCTS, INITIAL_OPERATORS } from "@/lib/data";
 import { Header } from "@/components/Header";
@@ -22,7 +22,7 @@ import { WeightModal } from "@/components/modals/WeightModal";
 import { Toast } from "@/components/Toast";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
 import { ScanFlash } from "@/components/ScanFlash";
-import { Tutorial } from "@/components/Tutorial";
+import { Tutorial, TutorialStep } from "@/components/Tutorial";
 import { beepScan, chimeSuccess, buzzError } from "@/lib/sounds";
 
 export default function PDV() {
@@ -298,6 +298,125 @@ export default function PDV() {
     return () => window.removeEventListener("keydown", handleKey);
   }, [paymentOpen, operatorOpen, pinOpen, qtyOpen, panelOpen, fechamentoOpen, produtosOpen, tutorialOpen, receiptOpen, discountOpen, weightOpen, items, simulateScan, showToast]);
 
+  // Tutorial steps with live demos
+  const tutorialSteps = useMemo((): TutorialStep[] => {
+    const searchType = (text: string) => {
+      const input = document.querySelector("[data-tour='search'] input") as HTMLInputElement | null;
+      if (!input) return;
+      const nativeInputValue = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value");
+      nativeInputValue?.set?.call(input, text);
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      input.focus();
+    };
+    const searchClear = () => {
+      const input = document.querySelector("[data-tour='search'] input") as HTMLInputElement | null;
+      if (!input) return;
+      const nativeInputValue = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value");
+      nativeInputValue?.set?.call(input, "");
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    };
+
+    return [
+      {
+        selector: "[data-tour='scan']",
+        title: "Simular Scan",
+        description: "Simula a leitura de um código de barras. No uso real, o leitor físico adicionaria o produto automaticamente.",
+        shortcuts: ["F3"],
+        position: "top",
+        onEnter: () => { simulateScan(); setTimeout(simulateScan, 300); setTimeout(simulateScan, 600); },
+      },
+      {
+        selector: "[data-tour='search']",
+        title: "Busca de Produtos",
+        description: "Busque por nome ou código de barras. Digitar o código exato e pressionar Enter adiciona o produto direto ao carrinho.",
+        position: "left",
+        onEnter: () => setTimeout(() => searchType("leite"), 100),
+        onLeave: searchClear,
+      },
+      {
+        selector: "[data-tour='cart']",
+        title: "Carrinho",
+        description: "Lista os itens escaneados. Clique com o botão direito para: alterar quantidade, consultar preço, aplicar desconto individual no item ou removê-lo.",
+        position: "right",
+      },
+      {
+        selector: "[data-tour='discount']",
+        title: "Desconto",
+        description: "Aplica um desconto global em reais ou porcentagem sobre o total da venda. Para descontos em itens específicos, clique com o botão direito no item desejado no carrinho.",
+        position: "top",
+        onEnter: () => setTimeout(() => setDiscountOpen(true), 150),
+        onLeave: () => setDiscountOpen(false),
+      },
+      {
+        selector: "[data-tour='total']",
+        title: "Total da Compra",
+        description: "Exibe a quantidade de itens e o valor total atualizado em tempo real, já considerando descontos globais e por item.",
+        position: "top",
+      },
+      {
+        selector: "[data-tour='finalize']",
+        title: "Finalizar Venda",
+        description: "Abre o modal de pagamento: Pix, Crédito, Débito, Dinheiro (com cálculo de troco) ou Vale. Também suporta pagamento dividido entre múltiplos métodos.",
+        shortcuts: ["F2"],
+        position: "top",
+        onEnter: () => setTimeout(() => setPaymentOpen(true), 150),
+        onLeave: () => setPaymentOpen(false),
+      },
+      {
+        selector: "[data-tour='supervisor']",
+        title: "Chamar Supervisor",
+        description: "Envia um alerta para o supervisor de turno. Necessário para autorizações especiais como estornos com senha.",
+        shortcuts: ["F1"],
+        position: "bottom",
+      },
+      {
+        selector: "[data-tour='historico']",
+        title: "Histórico de Vendas",
+        description: "Todas as vendas do operador, filtráveis por dia, mês ou ano. Para estornar uma venda, informe o valor (parcial ou total) e autentique com a senha do supervisor (1111).",
+        shortcuts: ["Esc fecha"],
+        position: "bottom",
+        onEnter: () => setTimeout(() => { setPanelOperator(currentOperator); setPanelOpen(true); }, 150),
+        onLeave: () => setPanelOpen(false),
+      },
+      {
+        selector: "[data-tour='fechamento']",
+        title: "Fechamento de Caixa",
+        description: "Resumo diário por método de pagamento com gráfico de barras. Inicie a conferência para comparar o dinheiro esperado com o contado. Imprima o relatório pelo ícone de impressora.",
+        shortcuts: ["F6", "Esc fecha"],
+        position: "bottom",
+        onEnter: () => setTimeout(() => setFechamentoOpen(true), 150),
+        onLeave: () => setFechamentoOpen(false),
+      },
+      {
+        selector: "[data-tour='produtos']",
+        title: "Gestão de Produtos",
+        description: "Adicione, edite ou remova produtos do catálogo. Ao cadastrar, escolha a unidade: 'un' para itens avulsos ou 'kg' para produtos de balança (pesagem automática ao escanear).",
+        shortcuts: ["F5", "Esc fecha"],
+        position: "bottom",
+        onEnter: () => setTimeout(() => setProdutosOpen(true), 150),
+        onLeave: () => setProdutosOpen(false),
+      },
+      {
+        selector: "[data-tour='darkmode']",
+        title: "Modo Escuro",
+        description: "Alterna entre tema claro e escuro. Útil para turnos noturnos, reduzindo o cansaço visual do operador.",
+        position: "bottom",
+        onEnter: toggleDark,
+        onLeave: toggleDark,
+      },
+      {
+        selector: "[data-tour='operator']",
+        title: "Trocar Operador",
+        description: "Selecione outro operador e autentique com PIN de 4 dígitos. Cada operador tem histórico e fechamento independentes.",
+        shortcuts: ["F8", "Esc fecha"],
+        position: "bottom",
+        onEnter: () => setTimeout(() => setOperatorOpen(true), 150),
+        onLeave: () => setOperatorOpen(false),
+      },
+    ];
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentOperator, toggleDark, simulateScan]);
+
   const subtotal = items.reduce((s, i) => {
     const lineTotal = i.price * i.qty;
     return s + (i.itemDiscount ? lineTotal * (1 - i.itemDiscount / 100) : lineTotal);
@@ -356,7 +475,7 @@ export default function PDV() {
       <WeightModal open={weightOpen} product={weightProduct} onConfirm={handleWeightConfirm} onClose={() => { setWeightOpen(false); setWeightProduct(null); }} />
       <ItemDiscountModal open={itemDiscountOpen} item={itemDiscountTarget} onConfirm={handleItemDiscount} onClose={() => { setItemDiscountOpen(false); setItemDiscountTarget(null); }} />
       <ReceiptModal open={receiptOpen} itemCount={receiptData?.itemCount ?? 0} total={receiptData?.total ?? 0} method={receiptData?.method ?? ""} saleNumber={receiptData?.saleNumber} onClose={() => setReceiptOpen(false)} />
-      <Tutorial open={tutorialOpen} onClose={() => setTutorialOpen(false)} />
+      <Tutorial open={tutorialOpen} steps={tutorialSteps} onClose={() => setTutorialOpen(false)} />
 
       <ScanFlash type={scanFlash} />
       <Toast message={toast} />

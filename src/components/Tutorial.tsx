@@ -2,53 +2,60 @@
 
 import { useState, useEffect, useLayoutEffect, useRef } from "react";
 
-interface TutorialStep {
+export interface TutorialStep {
   selector: string;
   title: string;
   description: string;
   shortcuts?: string[];
   position: "bottom" | "left" | "top" | "right";
+  onEnter?: () => void;
+  onLeave?: () => void;
 }
-
-const ALL_STEPS: TutorialStep[] = [
-  { selector: "[data-tour='scan']", title: "Simular Scan", description: "Simula a leitura de um código de barras. No uso real, o leitor físico adicionaria o produto automaticamente.", shortcuts: ["F3"], position: "top" },
-  { selector: "[data-tour='search']", title: "Busca de Produtos", description: "Busque por nome ou código de barras. Digitar o código exato e pressionar Enter adiciona o produto direto ao carrinho.", position: "left" },
-  { selector: "[data-tour='cart']", title: "Carrinho", description: "Lista os itens escaneados. Clique com o botão direito para: alterar quantidade, consultar preço, aplicar desconto individual no item ou removê-lo.", position: "right" },
-  { selector: "[data-tour='discount']", title: "Desconto", description: "Aplica um desconto global em reais ou porcentagem sobre o total da venda. Para descontos em itens específicos, clique com o botão direito no item desejado no carrinho.", position: "top" },
-  { selector: "[data-tour='total']", title: "Total da Compra", description: "Exibe a quantidade de itens e o valor total atualizado em tempo real, já considerando descontos globais e por item.", position: "top" },
-  { selector: "[data-tour='finalize']", title: "Finalizar Venda", description: "Abre o modal de pagamento: Pix, Crédito, Débito, Dinheiro (com cálculo de troco) ou Vale. Também suporta pagamento dividido entre múltiplos métodos.", shortcuts: ["F2"], position: "top" },
-  { selector: "[data-tour='supervisor']", title: "Chamar Supervisor", description: "Envia um alerta para o supervisor de turno. Necessário para autorizações especiais como estornos com senha.", shortcuts: ["F1"], position: "bottom" },
-  { selector: "[data-tour='historico']", title: "Histórico de Vendas", description: "Todas as vendas do operador, filtráveis por dia, mês ou ano. Para estornar uma venda, informe o valor (parcial ou total) e autentique com a senha do supervisor (1111).", shortcuts: ["Esc fecha"], position: "bottom" },
-  { selector: "[data-tour='fechamento']", title: "Fechamento de Caixa", description: "Resumo diário por método de pagamento com gráfico de barras. Inicie a conferência para comparar o dinheiro esperado no caixa com o valor contado. Imprima o relatório pelo ícone de impressora.", shortcuts: ["F6", "Esc fecha"], position: "bottom" },
-  { selector: "[data-tour='produtos']", title: "Gestão de Produtos", description: "Adicione, edite ou remova produtos do catálogo. Ao cadastrar, escolha a unidade: 'un' para itens avulsos ou 'kg' para produtos de balança (pesagem automática ao escanear).", shortcuts: ["F5", "Esc fecha"], position: "bottom" },
-  { selector: "[data-tour='darkmode']", title: "Modo Escuro", description: "Alterna entre tema claro e escuro. Útil para turnos noturnos, reduzindo o cansaço visual do operador.", position: "bottom" },
-  { selector: "[data-tour='operator']", title: "Trocar Operador", description: "Selecione outro operador e autentique com PIN de 4 dígitos. Cada operador tem histórico e fechamento independentes.", shortcuts: ["F8", "Esc fecha"], position: "bottom" },
-];
 
 interface TutorialProps {
   open: boolean;
+  steps: TutorialStep[];
   onClose: () => void;
 }
 
-export function Tutorial({ open, onClose }: TutorialProps) {
+export function Tutorial({ open, steps, onClose }: TutorialProps) {
   const [current, setCurrent] = useState(0);
   const [rect, setRect] = useState<DOMRect | null>(null);
   const [stepList, setStepList] = useState<TutorialStep[]>([]);
   const rafRef = useRef(0);
   const tooltipRef = useRef<HTMLDivElement>(null);
   const [tooltipH, setTooltipH] = useState(180);
+  const prevIndexRef = useRef<number>(-1);
 
   // Build visible step list once when opening
   useEffect(() => {
     if (open) {
-      const visible = ALL_STEPS.filter(s => document.querySelector(s.selector));
+      const visible = steps.filter(s => document.querySelector(s.selector));
       setStepList(visible);
       setCurrent(0);
       setRect(null);
+      prevIndexRef.current = -1;
+    } else {
+      // On close, call onLeave for current step
+      setStepList(prev => {
+        prev[prevIndexRef.current]?.onLeave?.();
+        return prev;
+      });
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
-  // Update rect when current step changes
+  // Fire onLeave → onEnter when step changes
+  useEffect(() => {
+    if (!open || stepList.length === 0) return;
+    const prev = prevIndexRef.current;
+    if (prev >= 0 && prev !== current) stepList[prev]?.onLeave?.();
+    stepList[current]?.onEnter?.();
+    prevIndexRef.current = current;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [current, stepList, open]);
+
+  // Update rect when current step changes (with small delay so onEnter can mutate DOM)
   useEffect(() => {
     if (!open || stepList.length === 0) return;
     const step = stepList[current];
@@ -59,7 +66,8 @@ export function Tutorial({ open, onClose }: TutorialProps) {
       if (el) setRect(el.getBoundingClientRect());
     };
 
-    measure();
+    // Small delay so DOM updates from onEnter settle before measuring
+    const t = setTimeout(measure, 80);
 
     const onResize = () => {
       cancelAnimationFrame(rafRef.current);
@@ -68,6 +76,7 @@ export function Tutorial({ open, onClose }: TutorialProps) {
 
     window.addEventListener("resize", onResize);
     return () => {
+      clearTimeout(t);
       window.removeEventListener("resize", onResize);
       cancelAnimationFrame(rafRef.current);
     };
@@ -101,13 +110,11 @@ export function Tutorial({ open, onClose }: TutorialProps) {
 
   const step = stepList[current];
   const pad = 6;
-
   const tooltipW = 288;
   const gap = 8;
   const vw = typeof window !== "undefined" ? window.innerWidth : 1200;
   const vh = typeof window !== "undefined" ? window.innerHeight : 800;
 
-  // Resolve actual position (with flip using highlight edges)
   let resolvedPos = step.position;
   const hlB = rect.bottom + pad;
   const hlT = rect.top - pad;
@@ -120,7 +127,6 @@ export function Tutorial({ open, onClose }: TutorialProps) {
   if (resolvedPos === "bottom" && hlB + gap + tooltipH > vh) resolvedPos = "top";
   if (resolvedPos === "top" && hlT - gap - tooltipH < 0) resolvedPos = "bottom";
 
-  // Highlight edges (element rect + pad)
   const hlTop = rect.top - pad;
   const hlBottom = rect.bottom + pad;
   const hlLeft = rect.left - pad;
@@ -131,19 +137,13 @@ export function Tutorial({ open, onClose }: TutorialProps) {
 
   const getTooltipStyle = (): React.CSSProperties => {
     const base: React.CSSProperties = { position: "fixed", zIndex: 60 };
-
     switch (resolvedPos) {
-      case "bottom":
-        return { ...base, top: hlBottom + gap, left: clampX(rect.left + rect.width / 2 - tooltipW / 2) };
-      case "top":
-        return { ...base, top: Math.max(8, hlTop - gap - tooltipH), left: clampX(rect.left + rect.width / 2 - tooltipW / 2) };
-      case "left":
-        return { ...base, top: clampY(rect.top + rect.height / 2 - tooltipH / 2), left: clampX(hlLeft - gap - tooltipW) };
-      case "right":
-        return { ...base, top: clampY(rect.top + rect.height / 2 - tooltipH / 2), left: clampX(hlRight + gap) };
+      case "bottom": return { ...base, top: hlBottom + gap, left: clampX(rect.left + rect.width / 2 - tooltipW / 2) };
+      case "top":    return { ...base, top: Math.max(8, hlTop - gap - tooltipH), left: clampX(rect.left + rect.width / 2 - tooltipW / 2) };
+      case "left":   return { ...base, top: clampY(rect.top + rect.height / 2 - tooltipH / 2), left: clampX(hlLeft - gap - tooltipW) };
+      case "right":  return { ...base, top: clampY(rect.top + rect.height / 2 - tooltipH / 2), left: clampX(hlRight + gap) };
     }
   };
-
 
   return (
     <>
@@ -153,21 +153,10 @@ export function Tutorial({ open, onClose }: TutorialProps) {
           <defs>
             <mask id="tutorial-mask">
               <rect x="0" y="0" width="100%" height="100%" fill="white" />
-              <rect
-                x={rect.left - pad}
-                y={rect.top - pad}
-                width={rect.width + pad * 2}
-                height={rect.height + pad * 2}
-                rx="8"
-                fill="black"
-              />
+              <rect x={rect.left - pad} y={rect.top - pad} width={rect.width + pad * 2} height={rect.height + pad * 2} rx="8" fill="black" />
             </mask>
           </defs>
-          <rect
-            x="0" y="0" width="100%" height="100%"
-            fill="rgba(0,0,0,0.5)"
-            mask="url(#tutorial-mask)"
-          />
+          <rect x="0" y="0" width="100%" height="100%" fill="rgba(0,0,0,0.5)" mask="url(#tutorial-mask)" />
         </svg>
       </div>
 
@@ -175,10 +164,8 @@ export function Tutorial({ open, onClose }: TutorialProps) {
       <div
         className="fixed z-[56] rounded-lg pointer-events-none"
         style={{
-          top: rect.top - pad,
-          left: rect.left - pad,
-          width: rect.width + pad * 2,
-          height: rect.height + pad * 2,
+          top: rect.top - pad, left: rect.left - pad,
+          width: rect.width + pad * 2, height: rect.height + pad * 2,
           boxShadow: "0 0 0 3px var(--color-navy), 0 0 16px rgba(92,107,192,0.3)",
           transition: "all 300ms cubic-bezier(0.32, 0.72, 0, 1)",
         }}
@@ -204,28 +191,18 @@ export function Tutorial({ open, onClose }: TutorialProps) {
             ))}
           </div>
         )}
-
         <div className="flex items-center justify-between">
-          <button
-            onClick={onClose}
-            className="text-xs text-onsurface-variant hover:text-onsurface transition-colors"
-          >
+          <button onClick={onClose} className="text-xs text-onsurface-variant hover:text-onsurface transition-colors">
             Pular tour
           </button>
           <div className="flex gap-2">
             {current > 0 && (
-              <button
-                onClick={() => setCurrent(c => c - 1)}
-                className="px-3 py-1.5 text-xs font-medium border border-surface-high rounded-md hover:bg-surface-low transition-colors"
-              >
+              <button onClick={() => setCurrent(c => c - 1)} className="px-3 py-1.5 text-xs font-medium border border-surface-high rounded-md hover:bg-surface-low transition-colors">
                 Anterior
               </button>
             )}
             <button
-              onClick={() => {
-                if (current < stepList.length - 1) setCurrent(c => c + 1);
-                else onClose();
-              }}
+              onClick={() => { if (current < stepList.length - 1) setCurrent(c => c + 1); else onClose(); }}
               className="px-3 py-1.5 text-xs font-semibold text-white btn-cta rounded-md"
             >
               {current === stepList.length - 1 ? "Concluir" : "Próximo"}

@@ -334,7 +334,7 @@ export default function PDV() {
         const itemId = parseInt(row.getAttribute("data-item-id") || "0");
         if (!itemId) return;
         const rect = row.getBoundingClientRect();
-        setContextMenu({ x: rect.left + 120, y: rect.top + 4, itemId });
+        setContextMenu({ x: rect.right - 210, y: rect.top + 4, itemId });
       }, 50);
     };
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { CartItem, Operator, Product } from "@/lib/types";
+import { CartItem, Operator, Product, Purchase } from "@/lib/types";
 import { PRODUCTS, INITIAL_OPERATORS } from "@/lib/data";
 import { Header } from "@/components/Header";
 import { ItemList } from "@/components/ItemList";
@@ -17,6 +17,7 @@ import { FechamentoDrawer } from "@/components/modals/FechamentoDrawer";
 import { ProdutosModal } from "@/components/modals/ProdutosModal";
 import { ReceiptModal } from "@/components/modals/ReceiptModal";
 import { DiscountModal } from "@/components/modals/DiscountModal";
+import { ItemDiscountModal } from "@/components/modals/ItemDiscountModal";
 import { WeightModal } from "@/components/modals/WeightModal";
 import { Toast } from "@/components/Toast";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
@@ -50,6 +51,8 @@ export default function PDV() {
   const [discount, setDiscount] = useState(0);
   const [weightOpen, setWeightOpen] = useState(false);
   const [weightProduct, setWeightProduct] = useState<Product | null>(null);
+  const [itemDiscountOpen, setItemDiscountOpen] = useState(false);
+  const [itemDiscountTarget, setItemDiscountTarget] = useState<CartItem | null>(null);
 
   // Context menu
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; itemId: number } | null>(null);
@@ -122,6 +125,10 @@ export default function PDV() {
       setQtyItem(item);
       setQtyOpen(true);
     }
+    if (action === "discount") {
+      setItemDiscountTarget(item);
+      setItemDiscountOpen(true);
+    }
     setContextMenu(null);
   }, [contextMenu, items, showToast]);
 
@@ -154,6 +161,15 @@ export default function PDV() {
     showToast(`✓ Operador: ${pinTarget.name}`);
   }, [pinTarget, showToast]);
 
+  // Item-level discount
+  const handleItemDiscount = useCallback((itemId: number, pct: number) => {
+    setItems(prev => prev.map(i => i.id === itemId ? { ...i, itemDiscount: pct || undefined } : i));
+    setItemDiscountOpen(false);
+    setItemDiscountTarget(null);
+    if (pct > 0) showToast(`Desconto de ${pct}% aplicado`);
+    else showToast("Desconto removido");
+  }, [showToast]);
+
   // Discount
   const handleApplyDiscount = useCallback((discountValue: number) => {
     setDiscount(discountValue);
@@ -162,27 +178,24 @@ export default function PDV() {
   }, [showToast]);
 
   // Refund
-  const handleRefund = useCallback((purchaseIndex: number) => {
+  const handleRefund = useCallback((purchaseIndex: number, amount: number) => {
+    const mark = (p: Purchase, i: number) =>
+      i === purchaseIndex ? { ...p, refunded: true, refundedAmount: amount } : p;
     setOperators(prev => prev.map(op =>
-      op.id === currentOperator.id
-        ? { ...op, history: op.history.map((p, i) => i === purchaseIndex ? { ...p, refunded: true } : p) }
-        : op
+      op.id === currentOperator.id ? { ...op, history: op.history.map(mark) } : op
     ));
-    setCurrentOperator(prev => ({
-      ...prev,
-      history: prev.history.map((p, i) => i === purchaseIndex ? { ...p, refunded: true } : p),
-    }));
-    setPanelOperator(prev => prev ? {
-      ...prev,
-      history: prev.history.map((p, i) => i === purchaseIndex ? { ...p, refunded: true } : p),
-    } : null);
+    setCurrentOperator(prev => ({ ...prev, history: prev.history.map(mark) }));
+    setPanelOperator(prev => prev ? { ...prev, history: prev.history.map(mark) } : null);
     buzzError();
-    showToast("Venda estornada");
+    showToast(`Estorno de R$ ${amount.toFixed(2).replace(".", ",")} autorizado`);
   }, [currentOperator, showToast]);
 
   // Payment confirm
   const handlePaymentConfirm = useCallback((method: string) => {
-    const subtotal = items.reduce((s, i) => s + i.price * i.qty, 0);
+    const subtotal = items.reduce((s, i) => {
+      const lineTotal = i.price * i.qty;
+      return s + (i.itemDiscount ? lineTotal * (1 - i.itemDiscount / 100) : lineTotal);
+    }, 0);
     const finalTotal = Math.max(0, subtotal - discount);
     const count = items.reduce((s, i) => s + i.qty, 0);
     const now = new Date();
@@ -233,6 +246,7 @@ export default function PDV() {
       // Escape closes the topmost open modal/drawer
       if (e.key === "Escape") {
         e.preventDefault();
+        if (itemDiscountOpen) { setItemDiscountOpen(false); setItemDiscountTarget(null); return; }
         if (weightOpen) { setWeightOpen(false); setWeightProduct(null); return; }
         if (discountOpen) { setDiscountOpen(false); return; }
         if (pinOpen) { setPinOpen(false); setPinTarget(null); return; }
@@ -246,7 +260,7 @@ export default function PDV() {
         return;
       }
 
-      if (paymentOpen || operatorOpen || pinOpen || qtyOpen || panelOpen || fechamentoOpen || produtosOpen || tutorialOpen || receiptOpen || discountOpen || weightOpen) return;
+      if (paymentOpen || operatorOpen || pinOpen || qtyOpen || panelOpen || fechamentoOpen || produtosOpen || tutorialOpen || receiptOpen || discountOpen || weightOpen || itemDiscountOpen) return;
 
       switch (e.key) {
         case "F1":
@@ -284,7 +298,10 @@ export default function PDV() {
     return () => window.removeEventListener("keydown", handleKey);
   }, [paymentOpen, operatorOpen, pinOpen, qtyOpen, panelOpen, fechamentoOpen, produtosOpen, tutorialOpen, receiptOpen, discountOpen, weightOpen, items, simulateScan, showToast]);
 
-  const subtotal = items.reduce((s, i) => s + i.price * i.qty, 0);
+  const subtotal = items.reduce((s, i) => {
+    const lineTotal = i.price * i.qty;
+    return s + (i.itemDiscount ? lineTotal * (1 - i.itemDiscount / 100) : lineTotal);
+  }, 0);
   const total = Math.max(0, subtotal - discount);
   const itemCount = items.reduce((s, i) => s + i.qty, 0);
 
@@ -337,6 +354,7 @@ export default function PDV() {
       <ProdutosModal open={produtosOpen} products={products} onSave={setProducts} onClose={() => setProdutosOpen(false)} />
       <DiscountModal open={discountOpen} subtotal={subtotal} onApply={handleApplyDiscount} onClose={() => setDiscountOpen(false)} />
       <WeightModal open={weightOpen} product={weightProduct} onConfirm={handleWeightConfirm} onClose={() => { setWeightOpen(false); setWeightProduct(null); }} />
+      <ItemDiscountModal open={itemDiscountOpen} item={itemDiscountTarget} onConfirm={handleItemDiscount} onClose={() => { setItemDiscountOpen(false); setItemDiscountTarget(null); }} />
       <ReceiptModal open={receiptOpen} itemCount={receiptData?.itemCount ?? 0} total={receiptData?.total ?? 0} method={receiptData?.method ?? ""} saleNumber={receiptData?.saleNumber} onClose={() => setReceiptOpen(false)} />
       <Tutorial open={tutorialOpen} onClose={() => setTutorialOpen(false)} />
 

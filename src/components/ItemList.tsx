@@ -74,9 +74,23 @@ export function ItemList({ items, onContextMenu }: ItemListProps) {
               <span className="text-right text-sm text-onsurface-variant hidden md:block">
                 {item.price.toFixed(2).replace(".", ",")}
               </span>
-              <span className="text-right text-sm font-semibold">
-                {(item.price * item.qty).toFixed(2).replace(".", ",")}
-              </span>
+              <div className="text-right">
+                {item.itemDiscount ? (
+                  <>
+                    <span className="block text-xs line-through text-onsurface-variant leading-none">
+                      {(item.price * item.qty).toFixed(2).replace(".", ",")}
+                    </span>
+                    <span className="block text-sm font-semibold text-success leading-tight">
+                      {(item.price * item.qty * (1 - item.itemDiscount / 100)).toFixed(2).replace(".", ",")}
+                    </span>
+                    <span className="block text-[10px] text-success/80 leading-none">-{item.itemDiscount}%</span>
+                  </>
+                ) : (
+                  <span className="text-sm font-semibold">
+                    {(item.price * item.qty).toFixed(2).replace(".", ",")}
+                  </span>
+                )}
+              </div>
             </div>
           ))
         )}

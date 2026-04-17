@@ -15,7 +15,7 @@ export function ProdutosModal({ open, products, onSave, onClose }: ProdutosModal
   const [list, setList] = useState<Product[]>([]);
   const [editing, setEditing] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
-  const [form, setForm] = useState({ code: "", name: "", price: "" });
+  const [form, setForm] = useState({ code: "", name: "", price: "", unit: "un" as "un" | "kg" });
   const [search, setSearch] = useState("");
 
   useEffect(() => {
@@ -32,21 +32,21 @@ export function ProdutosModal({ open, products, onSave, onClose }: ProdutosModal
       setList([...products]);
       setEditing(null);
       setAdding(false);
-      setForm({ code: "", name: "", price: "" });
+      setForm({ code: "", name: "", price: "", unit: "un" });
       setSearch("");
     }
   }, [open, products]);
 
   const startEdit = useCallback((p: Product) => {
     setEditing(p.code);
-    setForm({ code: p.code, name: p.name, price: p.price.toFixed(2).replace(".", ",") });
+    setForm({ code: p.code, name: p.name, price: p.price.toFixed(2).replace(".", ","), unit: p.unit ?? "un" });
     setAdding(false);
   }, []);
 
   const startAdd = useCallback(() => {
     setAdding(true);
     setEditing(null);
-    setForm({ code: "", name: "", price: "" });
+    setForm({ code: "", name: "", price: "", unit: "un" });
   }, []);
 
   const saveEdit = useCallback(() => {
@@ -55,20 +55,20 @@ export function ProdutosModal({ open, products, onSave, onClose }: ProdutosModal
 
     if (adding) {
       if (list.some(p => p.code === form.code.trim())) return;
-      setList(prev => [...prev, { code: form.code.trim(), name: form.name.trim(), price }]);
+      setList(prev => [...prev, { code: form.code.trim(), name: form.name.trim(), price, unit: form.unit }]);
     } else if (editing) {
-      setList(prev => prev.map(p => p.code === editing ? { code: form.code.trim(), name: form.name.trim(), price } : p));
+      setList(prev => prev.map(p => p.code === editing ? { code: form.code.trim(), name: form.name.trim(), price, unit: form.unit } : p));
     }
     setEditing(null);
     setAdding(false);
-    setForm({ code: "", name: "", price: "" });
+    setForm({ code: "", name: "", price: "", unit: "un" });
   }, [form, editing, adding, list]);
 
   const removeProduct = useCallback((code: string) => {
     setList(prev => prev.filter(p => p.code !== code));
     if (editing === code) {
       setEditing(null);
-      setForm({ code: "", name: "", price: "" });
+      setForm({ code: "", name: "", price: "", unit: "un" });
     }
   }, [editing]);
 
@@ -135,7 +135,7 @@ export function ProdutosModal({ open, products, onSave, onClose }: ProdutosModal
             <p className="text-xs font-semibold text-onsurface-variant uppercase tracking-wider mb-3">
               {adding ? "Novo produto" : "Editar produto"}
             </p>
-            <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)_5rem] gap-2 mb-3">
+            <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)_5rem_4rem] gap-2 mb-3">
               <div className="relative min-w-0">
                 <input
                   type="text"
@@ -179,10 +179,26 @@ export function ProdutosModal({ open, products, onSave, onClose }: ProdutosModal
                 maxLength={6}
                 className="min-w-0 px-2 py-2 text-sm rounded-lg border border-surface-high bg-surface focus:outline-none focus:ring-2 focus:ring-navy/30 focus:border-navy transition-colors"
               />
+              <div className="flex rounded-lg border border-surface-high overflow-hidden text-xs font-semibold">
+                <button
+                  type="button"
+                  onClick={() => setForm(f => ({ ...f, unit: "un" }))}
+                  className={`flex-1 py-2 transition-colors ${form.unit === "un" ? "bg-navy text-white" : "bg-surface text-onsurface-variant hover:bg-surface-low"}`}
+                >
+                  un
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setForm(f => ({ ...f, unit: "kg" }))}
+                  className={`flex-1 py-2 transition-colors ${form.unit === "kg" ? "bg-navy text-white" : "bg-surface text-onsurface-variant hover:bg-surface-low"}`}
+                >
+                  kg
+                </button>
+              </div>
             </div>
             <div className="flex gap-2 justify-end">
               <button
-                onClick={() => { setAdding(false); setEditing(null); setForm({ code: "", name: "", price: "" }); }}
+                onClick={() => { setAdding(false); setEditing(null); setForm({ code: "", name: "", price: "", unit: "un" }); }}
                 className="px-4 py-1.5 text-sm text-onsurface-variant hover:text-onsurface border border-surface-high rounded-lg transition-colors"
               >
                 Cancelar
@@ -213,7 +229,10 @@ export function ProdutosModal({ open, products, onSave, onClose }: ProdutosModal
                     <p className="text-sm font-medium truncate">{p.name}</p>
                     <div className="flex items-center gap-3 mt-0.5">
                       <span className="text-xs text-onsurface-variant">{p.code}</span>
-                      <span className="text-xs font-semibold text-navy">R$ {p.price.toFixed(2).replace(".", ",")}</span>
+                      <span className="text-xs font-semibold text-navy">R$ {p.price.toFixed(2).replace(".", ",")}{p.unit === "kg" ? "/kg" : ""}</span>
+                      {p.unit === "kg" && (
+                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">balança</span>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-1 ml-3">

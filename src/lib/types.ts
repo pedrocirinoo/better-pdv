@@ -9,6 +9,7 @@ export interface CartItem extends Product {
   qty: number;
   id: number;
   weight?: number;
+  itemDiscount?: number; // percentage 0-100
 }
 
 export interface Purchase {
@@ -19,6 +20,7 @@ export interface Purchase {
   paymentMethod: string | string[];
   discount?: number;
   refunded?: boolean;
+  refundedAmount?: number;
 }
 
 export interface Operator {

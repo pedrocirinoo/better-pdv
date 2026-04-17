@@ -7,7 +7,7 @@ interface OperatorPanelModalProps {
   open: boolean;
   operator: Operator | null;
   onClose: () => void;
-  onRefund?: (purchaseIndex: number) => void;
+  onRefund?: (purchaseIndex: number, amount: number) => void;
 }
 
 type FilterMode = "dia" | "mes" | "ano";
@@ -45,6 +45,12 @@ export function OperatorPanelModal({ open, operator, onClose, onRefund }: Operat
   const [filterMode, setFilterMode] = useState<FilterMode>("dia");
   const [filterDate, setFilterDate] = useState(new Date());
   const [refundConfirm, setRefundConfirm] = useState<number | null>(null);
+  const [refundAmount, setRefundAmount] = useState("");
+  const [refundPin, setRefundPin] = useState("");
+  const [refundPinError, setRefundPinError] = useState(false);
+  const [refundStep, setRefundStep] = useState<"amount" | "pin">("amount");
+
+  const SUPERVISOR_PIN = "1111";
 
   useEffect(() => {
     if (open) {
@@ -60,6 +66,10 @@ export function OperatorPanelModal({ open, operator, onClose, onRefund }: Operat
       setFilterMode("dia");
       setFilterDate(new Date());
       setRefundConfirm(null);
+      setRefundAmount("");
+      setRefundPin("");
+      setRefundPinError(false);
+      setRefundStep("amount");
       setLoading(true);
       const t = setTimeout(() => setLoading(false), 600);
       return () => clearTimeout(t);
@@ -266,7 +276,11 @@ export function OperatorPanelModal({ open, operator, onClose, onRefund }: Operat
                           <div className="flex items-center gap-2">
                             <p className="text-sm font-medium">{p.time} — {p.itemCount} {p.itemCount === 1 ? "item" : "itens"}</p>
                             {p.refunded && (
-                              <span className="text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">Estornado</span>
+                              <span className="text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                                {p.refundedAmount != null && p.refundedAmount < p.total
+                                  ? `Estorno parcial R$ ${p.refundedAmount.toFixed(2).replace(".", ",")}`
+                                  : "Estornado"}
+                              </span>
                             )}
                           </div>
                           <p className="text-xs text-onsurface-variant">{Array.isArray(p.paymentMethod) ? p.paymentMethod.map(m => methodLabels[m] || m).join(" + ") : (methodLabels[p.paymentMethod] || p.paymentMethod)}</p>
@@ -276,7 +290,7 @@ export function OperatorPanelModal({ open, operator, onClose, onRefund }: Operat
                         <span className={`text-sm font-semibold ${p.refunded ? "line-through text-onsurface-variant" : ""}`}>R$ {p.total.toFixed(2).replace(".", ",")}</span>
                         {!p.refunded && onRefund && (
                           <button
-                            onClick={() => setRefundConfirm(originalIdx)}
+                            onClick={() => { setRefundConfirm(originalIdx); setRefundAmount(p.total.toFixed(2).replace(".", ",")); setRefundStep("amount"); setRefundPin(""); setRefundPinError(false); }}
                             className="p-1 rounded-md text-onsurface-variant hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                             title="Estornar"
                           >
@@ -289,22 +303,70 @@ export function OperatorPanelModal({ open, operator, onClose, onRefund }: Operat
                     </div>
 
                     {refundConfirm === originalIdx && (
-                      <div className="mt-2 p-2.5 rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/30">
-                        <p className="text-xs text-red-700 dark:text-red-400 mb-2">Confirmar estorno de R$ {p.total.toFixed(2).replace(".", ",")}?</p>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => setRefundConfirm(null)}
-                            className="flex-1 py-1.5 text-xs text-onsurface-variant hover:text-onsurface border border-surface-high rounded-md transition-colors"
-                          >
-                            Cancelar
-                          </button>
-                          <button
-                            onClick={() => { onRefund?.(originalIdx); setRefundConfirm(null); }}
-                            className="flex-1 py-1.5 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors"
-                          >
-                            Estornar
-                          </button>
-                        </div>
+                      <div className="mt-2 p-3 rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/30 space-y-2.5">
+                        {refundStep === "amount" ? (
+                          <>
+                            <p className="text-xs font-semibold text-red-700 dark:text-red-400">Valor do estorno</p>
+                            <div className="relative">
+                              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-onsurface-variant">R$</span>
+                              <input
+                                type="text"
+                                inputMode="decimal"
+                                value={refundAmount}
+                                onChange={(e) => setRefundAmount(e.target.value)}
+                                className="w-full pl-8 pr-3 py-1.5 text-sm font-semibold rounded-md border border-red-200 dark:border-red-800/30 bg-white dark:bg-surface focus:outline-none focus:ring-2 focus:ring-red-300 dark:focus:ring-red-700"
+                                autoFocus
+                              />
+                            </div>
+                            <p className="text-[10px] text-onsurface-variant">Total original: R$ {p.total.toFixed(2).replace(".", ",")}</p>
+                            <div className="flex gap-2">
+                              <button onClick={() => { setRefundConfirm(null); }} className="flex-1 py-1.5 text-xs border border-surface-high rounded-md transition-colors text-onsurface-variant hover:text-onsurface">Cancelar</button>
+                              <button
+                                onClick={() => { const v = parseFloat(refundAmount.replace(",", ".")); if (v > 0 && v <= p.total) setRefundStep("pin"); }}
+                                disabled={(() => { const v = parseFloat(refundAmount.replace(",", ".")); return !(v > 0 && v <= p.total); })()}
+                                className="flex-1 py-1.5 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                              >
+                                Continuar
+                              </button>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <p className="text-xs font-semibold text-red-700 dark:text-red-400">Senha do supervisor</p>
+                            <input
+                              type="password"
+                              inputMode="numeric"
+                              maxLength={4}
+                              value={refundPin}
+                              onChange={(e) => { setRefundPin(e.target.value); setRefundPinError(false); }}
+                              placeholder="••••"
+                              autoFocus
+                              className={`w-full px-3 py-1.5 text-sm text-center font-bold tracking-widest rounded-md border bg-white dark:bg-surface focus:outline-none focus:ring-2 transition-colors ${refundPinError ? "border-red-500 focus:ring-red-300 dark:focus:ring-red-700" : "border-red-200 dark:border-red-800/30 focus:ring-red-300 dark:focus:ring-red-700"}`}
+                            />
+                            {refundPinError && <p className="text-[10px] text-red-600 dark:text-red-400">Senha incorreta</p>}
+                            <div className="flex gap-2">
+                              <button onClick={() => setRefundStep("amount")} className="flex-1 py-1.5 text-xs border border-surface-high rounded-md transition-colors text-onsurface-variant hover:text-onsurface">Voltar</button>
+                              <button
+                                onClick={() => {
+                                  if (refundPin === SUPERVISOR_PIN) {
+                                    const amount = parseFloat(refundAmount.replace(",", "."));
+                                    onRefund?.(originalIdx, amount);
+                                    setRefundConfirm(null);
+                                    setRefundPin("");
+                                    setRefundStep("amount");
+                                  } else {
+                                    setRefundPinError(true);
+                                    setRefundPin("");
+                                  }
+                                }}
+                                disabled={refundPin.length < 4}
+                                className="flex-1 py-1.5 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                              >
+                                Estornar R$ {parseFloat(refundAmount.replace(",", ".") || "0").toFixed(2).replace(".", ",")}
+                              </button>
+                            </div>
+                          </>
+                        )}
                       </div>
                     )}
                   </div>

@@ -49,6 +49,7 @@ export function Footer({ total, subtotal, discount, itemCount, onSimulateScan, o
             <button
               onClick={onDiscount}
               disabled={itemCount === 0}
+              data-tour="discount"
               className="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium border border-navy text-navy hover:bg-navy/5 transition-colors active:scale-[0.98] whitespace-nowrap"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

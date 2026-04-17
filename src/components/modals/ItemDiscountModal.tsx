@@ -56,6 +56,7 @@ export function ItemDiscountModal({ open, item, onConfirm, onClose }: ItemDiscou
       onClick={onClose}
     >
       <div
+        data-tour="item-discount-modal"
         onClick={(e) => e.stopPropagation()}
         className="modal-panel relative w-full max-w-xs bg-surface-lowest rounded-xl shadow-ambient-lg p-5"
       >

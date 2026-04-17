@@ -30,6 +30,7 @@ export function ContextMenu({ x, y, onAction, onClose }: ContextMenuProps) {
   return (
     <div
       ref={ref}
+      data-tour="context-menu"
       style={{ top: y, left: x }}
       className="fixed z-50 bg-surface-lowest rounded-lg shadow-ambient-lg border border-surface-high py-1 min-w-[180px] animate-in fade-in zoom-in-95 duration-100"
     >

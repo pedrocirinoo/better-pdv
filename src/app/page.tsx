@@ -327,107 +327,204 @@ export default function PDV() {
       nativeInputValue?.set?.call(input, "");
       input.dispatchEvent(new Event("input", { bubbles: true }));
     };
+    const openContextOnFirstItem = () => {
+      setTimeout(() => {
+        const row = document.querySelector("[data-item-id]") as HTMLElement | null;
+        if (!row) return;
+        const itemId = parseInt(row.getAttribute("data-item-id") || "0");
+        if (!itemId) return;
+        const rect = row.getBoundingClientRect();
+        setContextMenu({ x: rect.left + 120, y: rect.top + 4, itemId });
+      }, 50);
+    };
 
     return [
+      // ── 1. Scan ──────────────────────────────────────────────────────────
       {
         selector: "[data-tour='scan']",
         title: "Simular Scan",
-        description: "Simula a leitura de um código de barras. No uso real, o leitor físico adicionaria o produto automaticamente.",
+        description: "Simula a leitura de um código de barras. No caixa real, o leitor físico adiciona o produto automaticamente. Os 3 itens acima foram escaneados assim.",
         shortcuts: ["F3"],
         position: "top",
-        // items already pre-scanned when tutorial opens
       },
+      // ── 2. Busca ─────────────────────────────────────────────────────────
       {
         selector: "[data-tour='search']",
         title: "Busca de Produtos",
-        description: "Busque por nome ou código de barras. Digitar o código exato e pressionar Enter adiciona o produto direto ao carrinho.",
+        description: "Busque por nome ou código. Digitar o código exato e pressionar Enter adiciona o produto sem clicar.",
         position: "left",
         onEnter: () => setTimeout(() => searchType("leite"), 100),
         onLeave: searchClear,
       },
+      // ── 3. Carrinho ───────────────────────────────────────────────────────
       {
         selector: "[data-tour='cart']",
         title: "Carrinho",
-        description: "Lista os itens escaneados. Clique com o botão direito para: alterar quantidade, consultar preço, aplicar desconto individual no item ou removê-lo.",
+        description: "Lista todos os itens escaneados. Clique com o botão direito em qualquer item para ver as opções disponíveis.",
         position: "right",
+        onEnter: searchClear,
       },
+      // ── 4. Menu de contexto ───────────────────────────────────────────────
+      {
+        selector: "[data-tour='context-menu']",
+        title: "Menu de Contexto",
+        description: "Com botão direito num item: altere quantidade, consulte o preço unitário, aplique desconto individual ou remova o item.",
+        position: "left",
+        onEnter: openContextOnFirstItem,
+        onLeave: () => setContextMenu(null),
+      },
+      // ── 5. Alterar quantidade ─────────────────────────────────────────────
+      {
+        selector: "[data-tour='qty-modal']",
+        title: "Alterar Quantidade",
+        description: "Ajuste a quantidade do item com + / − ou digitando diretamente. Reduzir para zero remove o item do carrinho.",
+        position: "left",
+        onEnter: () => {
+          setContextMenu(null);
+          if (items.length === 0) return;
+          setTimeout(() => { setQtyItem(items[0]); setQtyOpen(true); }, 50);
+        },
+        onLeave: () => { setQtyOpen(false); setQtyItem(null); },
+      },
+      // ── 6. Desconto por item ──────────────────────────────────────────────
+      {
+        selector: "[data-tour='item-discount-modal']",
+        title: "Desconto por Item",
+        description: "Aplique um percentual de desconto individual em qualquer produto. O carrinho mostra o preço riscado e o valor final destacado.",
+        position: "left",
+        onEnter: () => {
+          if (items.length === 0) return;
+          setTimeout(() => { setItemDiscountTarget(items[0]); setItemDiscountOpen(true); }, 50);
+        },
+        onLeave: () => { setItemDiscountOpen(false); setItemDiscountTarget(null); },
+      },
+      // ── 7. Botão desconto global ──────────────────────────────────────────
+      {
+        selector: "[data-tour='discount']",
+        title: "Desconto Global — Botão",
+        description: "Aplica desconto sobre o total da venda inteira (em % ou R$). Clique aqui para abrir o painel de desconto.",
+        position: "top",
+      },
+      // ── 8. Modal desconto global ──────────────────────────────────────────
       {
         selector: "[data-tour='discount-modal']",
-        title: "Desconto",
-        description: "Aplica um desconto global em reais ou porcentagem sobre o total da venda. Para descontos em itens específicos, clique com o botão direito no item desejado no carrinho.",
+        title: "Desconto Global",
+        description: "Escolha entre porcentagem ou valor fixo em reais. O resumo mostra subtotal, desconto e novo total em tempo real.",
         position: "left",
         onEnter: () => setTimeout(() => setDiscountOpen(true), 50),
         onLeave: () => setDiscountOpen(false),
       },
+      // ── 9. Total ──────────────────────────────────────────────────────────
       {
         selector: "[data-tour='total']",
         title: "Total da Compra",
-        description: "Exibe a quantidade de itens e o valor total atualizado em tempo real, já considerando descontos globais e por item.",
+        description: "Atualizado em tempo real: reflete descontos globais e por item automaticamente. Fica verde quando há desconto ativo.",
         position: "top",
       },
+      // ── 10. Botão finalizar ───────────────────────────────────────────────
+      {
+        selector: "[data-tour='finalize']",
+        title: "Finalizar — Botão",
+        description: "Abre o modal de pagamento para fechar a venda. Também disponível via atalho de teclado.",
+        shortcuts: ["F2"],
+        position: "top",
+      },
+      // ── 11. Modal pagamento ───────────────────────────────────────────────
       {
         selector: "[data-tour='payment-modal']",
-        title: "Finalizar Venda",
-        description: "Abre o modal de pagamento: Pix, Crédito, Débito, Dinheiro (com cálculo de troco) ou Vale. Também suporta pagamento dividido entre múltiplos métodos.",
-        shortcuts: ["F2"],
+        title: "Pagamento",
+        description: "Pix, Crédito, Débito, Dinheiro (com troco automático) ou Vale-refeição. Suporta pagamento dividido entre múltiplos métodos.",
         position: "left",
         onEnter: () => setTimeout(() => setPaymentOpen(true), 50),
         onLeave: () => setPaymentOpen(false),
       },
+      // ── 12. Supervisor ────────────────────────────────────────────────────
       {
         selector: "[data-tour='supervisor']",
         title: "Chamar Supervisor",
-        description: "Envia um alerta para o supervisor de turno. Necessário para autorizações especiais como estornos com senha.",
+        description: "Aciona o supervisor de turno. Necessário para liberar estornos e autorizações especiais com senha.",
         shortcuts: ["F1"],
         position: "bottom",
       },
+      // ── 13. Botão histórico ───────────────────────────────────────────────
+      {
+        selector: "[data-tour='historico']",
+        title: "Histórico — Botão",
+        description: "Acessa todas as vendas do operador logado, com filtro por período.",
+        position: "bottom",
+      },
+      // ── 14. Painel do operador ────────────────────────────────────────────
       {
         selector: "[data-tour='panel-modal']",
         title: "Histórico de Vendas",
-        description: "Todas as vendas do operador, filtráveis por dia, mês ou ano. Para estornar uma venda, informe o valor (parcial ou total) e autentique com a senha do supervisor.",
-        shortcuts: ["Esc fecha"],
+        description: "Lista todas as vendas com valor, método e horário. Para estornar: informe o valor (pode ser parcial) e confirme com a senha do supervisor.",
         position: "left",
         onEnter: () => setTimeout(() => { setPanelOperator(currentOperator); setPanelOpen(true); }, 50),
         onLeave: () => setPanelOpen(false),
       },
+      // ── 15. Botão fechamento ──────────────────────────────────────────────
+      {
+        selector: "[data-tour='fechamento']",
+        title: "Fechamento — Botão",
+        description: "Acessa o resumo diário de vendas por método de pagamento.",
+        shortcuts: ["F6"],
+        position: "bottom",
+      },
+      // ── 16. Drawer fechamento ─────────────────────────────────────────────
       {
         selector: "[data-tour='fechamento-modal']",
         title: "Fechamento de Caixa",
-        description: "Resumo diário por método de pagamento com gráfico de barras. Inicie a conferência para comparar o dinheiro esperado com o contado. Imprima o relatório pelo ícone de impressora.",
-        shortcuts: ["F6", "Esc fecha"],
+        description: "Gráfico de barras por método, conferência de dinheiro em caixa (esperado vs. contado) e impressão do relatório.",
         position: "left",
         onEnter: () => setTimeout(() => setFechamentoOpen(true), 50),
         onLeave: () => setFechamentoOpen(false),
       },
+      // ── 17. Botão produtos ────────────────────────────────────────────────
+      {
+        selector: "[data-tour='produtos']",
+        title: "Produtos — Botão",
+        description: "Abre o catálogo de produtos para adicionar, editar ou remover itens.",
+        shortcuts: ["F5"],
+        position: "bottom",
+      },
+      // ── 18. Modal produtos ────────────────────────────────────────────────
       {
         selector: "[data-tour='produtos-modal']",
         title: "Gestão de Produtos",
-        description: "Adicione, edite ou remova produtos do catálogo. Ao cadastrar, escolha a unidade: 'un' para itens avulsos ou 'kg' para produtos de balança (pesagem automática ao escanear).",
-        shortcuts: ["F5", "Esc fecha"],
+        description: "Cadastre com código, nome e preço. Escolha 'un' para unidade ou 'kg' para balança — produtos kg pedem o peso na hora do scan.",
         position: "left",
         onEnter: () => setTimeout(() => setProdutosOpen(true), 50),
         onLeave: () => setProdutosOpen(false),
       },
+      // ── 19. Dark mode ─────────────────────────────────────────────────────
       {
         selector: "[data-tour='darkmode']",
         title: "Modo Escuro",
-        description: "Alterna entre tema claro e escuro. Útil para turnos noturnos, reduzindo o cansaço visual do operador.",
+        description: "Alterna entre tema claro e escuro. Ideal para turnos noturnos, reduzindo o cansaço visual.",
         position: "bottom",
         onEnter: toggleDark,
         onLeave: toggleDark,
       },
+      // ── 20. Botão operador ────────────────────────────────────────────────
+      {
+        selector: "[data-tour='operator']",
+        title: "Trocar Operador — Botão",
+        description: "Exibe os operadores disponíveis. Cada um tem histórico e fechamento independentes.",
+        shortcuts: ["F8"],
+        position: "bottom",
+      },
+      // ── 21. Modal operador ────────────────────────────────────────────────
       {
         selector: "[data-tour='operator-modal']",
         title: "Trocar Operador",
-        description: "Selecione outro operador e autentique com PIN de 4 dígitos. Cada operador tem histórico e fechamento independentes.",
-        shortcuts: ["F8", "Esc fecha"],
+        description: "Selecione um operador e autentique com o PIN de 4 dígitos para assumir o caixa.",
         position: "left",
         onEnter: () => setTimeout(() => setOperatorOpen(true), 50),
         onLeave: () => setOperatorOpen(false),
       },
     ];
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentOperator, toggleDark, simulateScan]);
+  }, [currentOperator, toggleDark, simulateScan, items]);
 
   const subtotal = items.reduce((s, i) => {
     const lineTotal = i.price * i.qty;

@@ -162,6 +162,7 @@ export function Tutorial({ open, steps, onClose }: TutorialProps) {
       <div
         ref={tooltipRef}
         onClick={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
         style={getTooltipStyle()}
         className="z-[56] w-72 bg-surface-lowest rounded-xl shadow-ambient-lg p-4 border border-surface-high"
       >

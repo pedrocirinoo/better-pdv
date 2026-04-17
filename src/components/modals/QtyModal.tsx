@@ -32,7 +32,7 @@ export function QtyModal({ open, item, onConfirm, onClose }: QtyModalProps) {
 
   return (
     <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm modal-overlay ${open ? "open" : ""}`} onClick={onClose}>
-      <div onClick={(e) => e.stopPropagation()} className="modal-panel bg-surface-lowest rounded-xl shadow-ambient-lg w-full max-w-xs p-6">
+      <div data-tour="qty-modal" onClick={(e) => e.stopPropagation()} className="modal-panel bg-surface-lowest rounded-xl shadow-ambient-lg w-full max-w-xs p-6">
         <h2 className="font-display font-bold text-lg mb-1">Quantidade</h2>
         <p className="text-sm text-onsurface-variant mb-6 truncate">{item.name}</p>
 

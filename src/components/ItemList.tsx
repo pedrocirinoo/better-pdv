@@ -59,6 +59,7 @@ export function ItemList({ items, onContextMenu }: ItemListProps) {
           items.map((item, idx) => (
             <div
               key={item.id}
+              data-item-id={item.id}
               onContextMenu={(e) => { e.preventDefault(); onContextMenu(e.clientX, e.clientY, item.id); }}
               className={`grid grid-cols-[2rem_1fr_3rem_5rem] md:grid-cols-[3rem_1fr_5rem_6rem_6rem] px-3 md:px-6 py-3 items-center border-b border-surface-high/50 hover:bg-surface-low/50 transition-colors cursor-context-menu ${newIdsRef.current.has(item.id) ? "cart-item-enter" : ""}`}
             >

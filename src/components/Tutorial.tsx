@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useLayoutEffect, useRef } from "react";
 
 interface TutorialStep {
   selector: string;
@@ -35,6 +35,7 @@ export function Tutorial({ open, onClose }: TutorialProps) {
   const [stepList, setStepList] = useState<TutorialStep[]>([]);
   const rafRef = useRef(0);
   const tooltipRef = useRef<HTMLDivElement>(null);
+  const [tooltipH, setTooltipH] = useState(180);
 
   // Build visible step list once when opening
   useEffect(() => {
@@ -87,13 +88,20 @@ export function Tutorial({ open, onClose }: TutorialProps) {
     return () => window.removeEventListener("keydown", handleKey);
   }, [open, stepList, onClose]);
 
+  // Measure tooltip height after each render so positioning is always accurate
+  useLayoutEffect(() => {
+    if (tooltipRef.current) {
+      const h = tooltipRef.current.offsetHeight;
+      if (h > 0 && h !== tooltipH) setTooltipH(h);
+    }
+  });
+
   if (!open || !rect || stepList.length === 0) return null;
 
   const step = stepList[current];
   const pad = 6;
 
   const tooltipW = 288;
-  const tooltipH = tooltipRef.current?.offsetHeight || 180;
   const gap = 8;
   const vw = typeof window !== "undefined" ? window.innerWidth : 1200;
   const vh = typeof window !== "undefined" ? window.innerHeight : 800;

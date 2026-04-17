@@ -12,16 +12,16 @@ interface TutorialStep {
 
 const ALL_STEPS: TutorialStep[] = [
   { selector: "[data-tour='scan']", title: "Simular Scan", description: "Simula a leitura de um código de barras. No uso real, o leitor físico adicionaria o produto automaticamente.", shortcuts: ["F3"], position: "top" },
-  { selector: "[data-tour='search']", title: "Busca de Produtos", description: "Busque por nome ou código de barras. Clique no produto para adicioná-lo ao carrinho.", position: "left" },
-  { selector: "[data-tour='cart']", title: "Carrinho", description: "Lista os itens escaneados. Clique com o botão direito em um item para alterar quantidade, ver preço ou remover.", position: "right" },
-  { selector: "[data-tour='total']", title: "Total da Compra", description: "Exibe a quantidade de itens e o valor total atualizado em tempo real.", position: "top" },
-  { selector: "[data-tour='finalize']", title: "Finalizar Venda", description: "Abre o modal de pagamento com opções: Pix, Crédito, Débito, Dinheiro e Vale. Para dinheiro, calcula o troco automaticamente.", shortcuts: ["F2"], position: "top" },
-  { selector: "[data-tour='supervisor']", title: "Chamar Supervisor", description: "Envia um alerta para o supervisor de turno. Usado para autorizações, estornos ou situações especiais.", shortcuts: ["F1"], position: "bottom" },
-  { selector: "[data-tour='historico']", title: "Histórico de Vendas", description: "Abre o painel lateral com todas as vendas do operador atual, filtráveis por dia, mês ou ano.", shortcuts: ["Esc fecha"], position: "bottom" },
-  { selector: "[data-tour='fechamento']", title: "Fechamento de Caixa", description: "Resumo diário: total vendido por método, dinheiro esperado no caixa e conferência para verificar se o caixa bateu.", shortcuts: ["F6", "Esc fecha"], position: "bottom" },
-  { selector: "[data-tour='produtos']", title: "Gestão de Produtos", description: "Adicione, edite ou remova produtos do catálogo. Alterações refletem imediatamente na busca e no scan.", shortcuts: ["F5", "Esc fecha"], position: "bottom" },
+  { selector: "[data-tour='search']", title: "Busca de Produtos", description: "Busque por nome ou código de barras. Digitar o código exato e pressionar Enter adiciona o produto direto ao carrinho.", position: "left" },
+  { selector: "[data-tour='cart']", title: "Carrinho", description: "Lista os itens escaneados. Clique com o botão direito para: alterar quantidade, consultar preço, aplicar desconto individual no item ou removê-lo.", position: "right" },
+  { selector: "[data-tour='total']", title: "Total da Compra", description: "Exibe a quantidade de itens e o valor total atualizado em tempo real, já considerando descontos globais e por item.", position: "top" },
+  { selector: "[data-tour='finalize']", title: "Finalizar Venda", description: "Abre o modal de pagamento: Pix, Crédito, Débito, Dinheiro (com cálculo de troco) ou Vale. Também suporta pagamento dividido entre múltiplos métodos.", shortcuts: ["F2"], position: "top" },
+  { selector: "[data-tour='supervisor']", title: "Chamar Supervisor", description: "Envia um alerta para o supervisor de turno. Necessário para autorizações especiais como estornos com senha.", shortcuts: ["F1"], position: "bottom" },
+  { selector: "[data-tour='historico']", title: "Histórico de Vendas", description: "Todas as vendas do operador, filtráveis por dia, mês ou ano. Para estornar uma venda, informe o valor (parcial ou total) e autentique com a senha do supervisor (1111).", shortcuts: ["Esc fecha"], position: "bottom" },
+  { selector: "[data-tour='fechamento']", title: "Fechamento de Caixa", description: "Resumo diário por método de pagamento com gráfico de barras. Inicie a conferência para comparar o dinheiro esperado no caixa com o valor contado. Imprima o relatório pelo ícone de impressora.", shortcuts: ["F6", "Esc fecha"], position: "bottom" },
+  { selector: "[data-tour='produtos']", title: "Gestão de Produtos", description: "Adicione, edite ou remova produtos do catálogo. Ao cadastrar, escolha a unidade: 'un' para itens avulsos ou 'kg' para produtos de balança (pesagem automática ao escanear).", shortcuts: ["F5", "Esc fecha"], position: "bottom" },
   { selector: "[data-tour='darkmode']", title: "Modo Escuro", description: "Alterna entre tema claro e escuro. Útil para turnos noturnos, reduzindo o cansaço visual do operador.", position: "bottom" },
-  { selector: "[data-tour='operator']", title: "Trocar Operador", description: "Selecione outro operador e insira o PIN de 4 dígitos pelo teclado virtual ou físico. Cada operador tem seu próprio histórico.", shortcuts: ["F8", "Esc fecha"], position: "bottom" },
+  { selector: "[data-tour='operator']", title: "Trocar Operador", description: "Selecione outro operador e autentique com PIN de 4 dígitos. Cada operador tem histórico e fechamento independentes.", shortcuts: ["F8", "Esc fecha"], position: "bottom" },
 ];
 
 interface TutorialProps {

@@ -109,7 +109,7 @@ export function Tutorial({ open, steps, onClose }: TutorialProps) {
   if (!open || !rect || stepList.length === 0) return null;
 
   const step = stepList[current];
-  const pad = 6;
+  const pad = 3;
   const tooltipW = 288;
   const gap = 8;
   const vw = typeof window !== "undefined" ? window.innerWidth : 1200;
@@ -147,26 +147,13 @@ export function Tutorial({ open, steps, onClose }: TutorialProps) {
 
   return (
     <>
-      {/* Overlay with cutout */}
-      <div className="fixed inset-0 z-[55]" onClick={onClose}>
-        <svg className="w-full h-full">
-          <defs>
-            <mask id="tutorial-mask">
-              <rect x="0" y="0" width="100%" height="100%" fill="white" />
-              <rect x={rect.left - pad} y={rect.top - pad} width={rect.width + pad * 2} height={rect.height + pad * 2} rx="8" fill="black" />
-            </mask>
-          </defs>
-          <rect x="0" y="0" width="100%" height="100%" fill="rgba(0,0,0,0.5)" mask="url(#tutorial-mask)" />
-        </svg>
-      </div>
-
-      {/* Highlight border */}
+      {/* Highlight border — no overlay, app stays fully visible */}
       <div
-        className="fixed z-[56] rounded-lg pointer-events-none"
+        className="fixed z-[55] rounded-lg pointer-events-none"
         style={{
           top: rect.top - pad, left: rect.left - pad,
           width: rect.width + pad * 2, height: rect.height + pad * 2,
-          boxShadow: "0 0 0 3px var(--color-navy), 0 0 16px rgba(92,107,192,0.3)",
+          boxShadow: "0 0 0 2px var(--color-navy), 0 0 0 4px rgba(92,107,192,0.25)",
           transition: "all 300ms cubic-bezier(0.32, 0.72, 0, 1)",
         }}
       />
@@ -176,7 +163,7 @@ export function Tutorial({ open, steps, onClose }: TutorialProps) {
         ref={tooltipRef}
         onClick={(e) => e.stopPropagation()}
         style={getTooltipStyle()}
-        className="z-[57] w-72 bg-surface-lowest rounded-xl shadow-ambient-lg p-4 border border-surface-high"
+        className="z-[56] w-72 bg-surface-lowest rounded-xl shadow-ambient-lg p-4 border border-surface-high"
       >
         <div className="flex items-center justify-between mb-2">
           <h3 className="font-display font-bold text-sm">{step.title}</h3>

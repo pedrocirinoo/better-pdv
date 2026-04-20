@@ -149,7 +149,10 @@ export function Tutorial({ open, steps, onClose }: TutorialProps) {
 
   return (
     <>
-      {/* Highlight border — no overlay, app stays fully visible */}
+      {/* Dark overlay — below modals (z-50) so demos show on top */}
+      <div className="fixed inset-0 z-40 bg-black/40" />
+
+      {/* Highlight border */}
       <div
         className="fixed z-[55] rounded-lg pointer-events-none"
         style={{

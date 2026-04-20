@@ -65,8 +65,10 @@ export function Tutorial({ open, steps, onClose }: TutorialProps) {
       if (el) setRect(el.getBoundingClientRect());
     };
 
-    // Delay so DOM updates from onEnter (and CSS transitions) settle before measuring
-    const t = setTimeout(measure, 350);
+    // Quick pass for already-visible elements (buttons, static panels)
+    const t1 = setTimeout(measure, 50);
+    // Second pass after CSS transitions settle (modals: 250ms, drawers: 300ms)
+    const t2 = setTimeout(measure, 320);
 
     const onResize = () => {
       cancelAnimationFrame(rafRef.current);
@@ -75,7 +77,8 @@ export function Tutorial({ open, steps, onClose }: TutorialProps) {
 
     window.addEventListener("resize", onResize);
     return () => {
-      clearTimeout(t);
+      clearTimeout(t1);
+      clearTimeout(t2);
       window.removeEventListener("resize", onResize);
       cancelAnimationFrame(rafRef.current);
     };

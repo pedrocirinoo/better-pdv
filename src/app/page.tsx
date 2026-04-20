@@ -222,6 +222,23 @@ export default function PDV() {
     chimeSuccess();
   }, [items, currentOperator, discount]);
 
+  // Close tutorial and reset PDV to clean state
+  const handleCloseTutorial = useCallback(() => {
+    setTutorialOpen(false);
+    setContextMenu(null);
+    setDiscountOpen(false);
+    setPaymentOpen(false);
+    setQtyOpen(false); setQtyItem(null);
+    setItemDiscountOpen(false); setItemDiscountTarget(null);
+    setPanelOpen(false);
+    setFechamentoOpen(false);
+    setProdutosOpen(false);
+    setOperatorOpen(false);
+    setItems([]);
+    setScanIndex(0);
+    setDiscount(0);
+  }, []);
+
   // Pre-scan items when tutorial opens so footer is stable before first step measures
   const handleOpenTutorial = useCallback(() => {
     if (items.length === 0) {
@@ -268,7 +285,7 @@ export default function PDV() {
         if (produtosOpen) { setProdutosOpen(false); return; }
         if (panelOpen) { setPanelOpen(false); return; }
         if (fechamentoOpen) { setFechamentoOpen(false); return; }
-        if (tutorialOpen) { setTutorialOpen(false); return; }
+        if (tutorialOpen) { handleCloseTutorial(); return; }
         return;
       }
 
@@ -308,7 +325,7 @@ export default function PDV() {
     };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [paymentOpen, operatorOpen, pinOpen, qtyOpen, panelOpen, fechamentoOpen, produtosOpen, tutorialOpen, receiptOpen, discountOpen, weightOpen, items, simulateScan, showToast]);
+  }, [paymentOpen, operatorOpen, pinOpen, qtyOpen, panelOpen, fechamentoOpen, produtosOpen, tutorialOpen, receiptOpen, discountOpen, weightOpen, items, simulateScan, showToast, handleCloseTutorial]);
 
   // Tutorial steps with live demos
   const tutorialSteps = useMemo((): TutorialStep[] => {
@@ -328,14 +345,12 @@ export default function PDV() {
       input.dispatchEvent(new Event("input", { bubbles: true }));
     };
     const openContextOnFirstItem = () => {
-      setTimeout(() => {
-        const row = document.querySelector("[data-item-id]") as HTMLElement | null;
-        if (!row) return;
-        const itemId = parseInt(row.getAttribute("data-item-id") || "0");
-        if (!itemId) return;
-        const rect = row.getBoundingClientRect();
-        setContextMenu({ x: rect.right - 210, y: rect.top + 4, itemId });
-      }, 50);
+      const row = document.querySelector("[data-item-id]") as HTMLElement | null;
+      if (!row) return;
+      const itemId = parseInt(row.getAttribute("data-item-id") || "0");
+      if (!itemId) return;
+      const rect = row.getBoundingClientRect();
+      setContextMenu({ x: rect.right - 210, y: rect.top + 4, itemId });
     };
 
     return [
@@ -382,7 +397,7 @@ export default function PDV() {
         onEnter: () => {
           setContextMenu(null);
           if (items.length === 0) return;
-          setTimeout(() => { setQtyItem(items[0]); setQtyOpen(true); }, 50);
+          setQtyItem(items[0]); setQtyOpen(true);
         },
         onLeave: () => { setQtyOpen(false); setQtyItem(null); },
       },
@@ -394,7 +409,7 @@ export default function PDV() {
         position: "left",
         onEnter: () => {
           if (items.length === 0) return;
-          setTimeout(() => { setItemDiscountTarget(items[0]); setItemDiscountOpen(true); }, 50);
+          setItemDiscountTarget(items[0]); setItemDiscountOpen(true);
         },
         onLeave: () => { setItemDiscountOpen(false); setItemDiscountTarget(null); },
       },
@@ -411,7 +426,7 @@ export default function PDV() {
         title: "Desconto Global",
         description: "Escolha entre porcentagem ou valor fixo em reais. O resumo mostra subtotal, desconto e novo total em tempo real.",
         position: "left",
-        onEnter: () => setTimeout(() => setDiscountOpen(true), 50),
+        onEnter: () => setDiscountOpen(true),
         onLeave: () => setDiscountOpen(false),
       },
       // ── 9. Total ──────────────────────────────────────────────────────────
@@ -435,7 +450,7 @@ export default function PDV() {
         title: "Pagamento",
         description: "Pix, Crédito, Débito, Dinheiro (com troco automático) ou Vale-refeição. Suporta pagamento dividido entre múltiplos métodos.",
         position: "left",
-        onEnter: () => setTimeout(() => setPaymentOpen(true), 50),
+        onEnter: () => setPaymentOpen(true),
         onLeave: () => setPaymentOpen(false),
       },
       // ── 12. Supervisor ────────────────────────────────────────────────────
@@ -459,7 +474,7 @@ export default function PDV() {
         title: "Histórico de Vendas",
         description: "Lista todas as vendas com valor, método e horário. Para estornar: informe o valor (pode ser parcial) e confirme com a senha do supervisor.",
         position: "left",
-        onEnter: () => setTimeout(() => { setPanelOperator(currentOperator); setPanelOpen(true); }, 50),
+        onEnter: () => { setPanelOperator(currentOperator); setPanelOpen(true); },
         onLeave: () => setPanelOpen(false),
       },
       // ── 15. Botão fechamento ──────────────────────────────────────────────
@@ -476,7 +491,7 @@ export default function PDV() {
         title: "Fechamento de Caixa",
         description: "Gráfico de barras por método, conferência de dinheiro em caixa (esperado vs. contado) e impressão do relatório.",
         position: "left",
-        onEnter: () => setTimeout(() => setFechamentoOpen(true), 50),
+        onEnter: () => setFechamentoOpen(true),
         onLeave: () => setFechamentoOpen(false),
       },
       // ── 17. Botão produtos ────────────────────────────────────────────────
@@ -493,7 +508,7 @@ export default function PDV() {
         title: "Gestão de Produtos",
         description: "Cadastre com código, nome e preço. Escolha 'un' para unidade ou 'kg' para balança — produtos kg pedem o peso na hora do scan.",
         position: "left",
-        onEnter: () => setTimeout(() => setProdutosOpen(true), 50),
+        onEnter: () => setProdutosOpen(true),
         onLeave: () => setProdutosOpen(false),
       },
       // ── 19. Dark mode ─────────────────────────────────────────────────────
@@ -519,7 +534,7 @@ export default function PDV() {
         title: "Trocar Operador",
         description: "Selecione um operador e autentique com o PIN de 4 dígitos para assumir o caixa.",
         position: "left",
-        onEnter: () => setTimeout(() => setOperatorOpen(true), 50),
+        onEnter: () => setOperatorOpen(true),
         onLeave: () => setOperatorOpen(false),
       },
     ];
@@ -584,7 +599,7 @@ export default function PDV() {
       <WeightModal open={weightOpen} product={weightProduct} onConfirm={handleWeightConfirm} onClose={() => { setWeightOpen(false); setWeightProduct(null); }} />
       <ItemDiscountModal open={itemDiscountOpen} item={itemDiscountTarget} onConfirm={handleItemDiscount} onClose={() => { setItemDiscountOpen(false); setItemDiscountTarget(null); }} />
       <ReceiptModal open={receiptOpen} itemCount={receiptData?.itemCount ?? 0} total={receiptData?.total ?? 0} method={receiptData?.method ?? ""} saleNumber={receiptData?.saleNumber} onClose={() => setReceiptOpen(false)} />
-      <Tutorial open={tutorialOpen} steps={tutorialSteps} onClose={() => setTutorialOpen(false)} />
+      <Tutorial open={tutorialOpen} steps={tutorialSteps} onClose={handleCloseTutorial} />
 
       <ScanFlash type={scanFlash} />
       <Toast message={toast} />

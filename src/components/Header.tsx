@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Operator } from "@/lib/types";
 
 interface HeaderProps {
@@ -15,9 +16,19 @@ interface HeaderProps {
 }
 
 export function Header({ operator, onOperatorClick, dark, onToggleDark, onHistorico, onFechamento, onProdutos, onCallSupervisor, onTutorial }: HeaderProps) {
-  const now = new Date();
-  const time = now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-  const date = now.toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "short" });
+  const [time, setTime] = useState("");
+  const [date, setDate] = useState("");
+
+  useEffect(() => {
+    const tick = () => {
+      const now = new Date();
+      setTime(now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }));
+      setDate(now.toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "short" }));
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, []);
 
   return (
     <header className="glass border-b border-surface-high px-3 md:px-6 py-3 flex items-center justify-between shrink-0">
